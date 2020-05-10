@@ -9,7 +9,7 @@ SRC				:= src
 INCLUDE			:= include
 LIB				:= LIB
 LIBRARIES		:= 
-EXECUTABLE		:= Program
+EXECUTABLE		:= cavestory
 
 
 all: $(BIN)/$(EXECUTABLE)

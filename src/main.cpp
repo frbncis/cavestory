@@ -1,6 +1,6 @@
 #include <chrono>
 #include <iostream>
-#include <Graphics.h>
+#include <graphics.h>
 #include <thread>
 
 int main() {
@@ -8,6 +8,9 @@ int main() {
 
 	Graphics graphics;
 
-	std::this_thread::sleep_for(std::chrono::seconds(10));
+	while (true) {
+		
+	}
+	// std::this_thread::sleep_for(std::chrono::seconds(10));
 	return 0;
 }

@@ -3,19 +3,14 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"label": "C/C++: g++ build active file",
-			"command": "/usr/bin/g++",
+			"label": "make all",
+			"command": "make",
 			"args": [
-				"-g",
-				"${workspaceFolder}/src/program.cpp",
-				"-o",
-				"${workspaceFolder}/build/program"
+				"all"
 			],
 			"options": {
-				"cwd": "/usr/bin"
 			},
 			"problemMatcher": [
-				"$gcc"
 			],
 			"group": {
 				"kind": "build",
