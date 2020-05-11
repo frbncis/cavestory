@@ -3,7 +3,7 @@
 
 CXX				:= g++
 CXX_FLAGS		:= -Wall -Wextra -std=c++17 -ggdb $(sdl2-config --cflags)
-LINKER_FLAGS	:= -lSDL2 -lGL
+LINKER_FLAGS	:= -lSDL2 -lGL -lSDL2_image
 BIN				:= bin
 SRC				:= src
 INCLUDE			:= include
