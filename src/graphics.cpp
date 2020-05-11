@@ -5,9 +5,11 @@
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
+const int SPRITE_SCALE_FACTOR = 2;
+
 const char* SCREEN_TITLE = "Cave Story";
 
-Graphics::Graphics() {
+Graphics::Graphics(): screen_width(SCREEN_WIDTH), screen_height(SCREEN_HEIGHT), sprite_scale_factor(SPRITE_SCALE_FACTOR) {
     SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
     SDL_SetWindowTitle(window, SCREEN_TITLE);
 }

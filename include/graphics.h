@@ -9,6 +9,10 @@ struct SDL_Renderer;
 
 class Graphics {
 public:
+    int screen_width;
+    int screen_height;
+    int sprite_scale_factor;
+
     Graphics();
     ~Graphics();
 

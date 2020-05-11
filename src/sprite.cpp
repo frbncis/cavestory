@@ -41,7 +41,7 @@ Sprite::~Sprite() { }
 void Sprite::update() { }
 
 void Sprite::draw(Graphics &graphics, int x, int y) {
-    SDL_Rect destination_rectangle = { x, y, this->source_rect.w, this->source_rect.h };
+    SDL_Rect destination_rectangle = { x, y, this->source_rect.w * graphics.sprite_scale_factor, this->source_rect.h * graphics.sprite_scale_factor};
 
     graphics.blit_surface(this->sprite_sheet, &this->source_rect, &destination_rectangle);
 }
