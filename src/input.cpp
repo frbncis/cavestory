@@ -2,7 +2,7 @@
 #include <iostream>
 
 void Input::begin_new_frame() {
-    this->held_keys.clear();
+    this->released_keys.clear();
     this->pressed_keys.clear();
 }
 

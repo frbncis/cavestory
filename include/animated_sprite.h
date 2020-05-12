@@ -38,7 +38,7 @@ public:
 
     void draw(Graphics &graphics, int x, int y);
 
-    virtual void setup_animations();
+    virtual void setup_animations() = 0;
 
 protected:
     double sprite_frame_period;
@@ -53,7 +53,7 @@ protected:
 
     void set_visible(bool visible);
 
-    virtual void on_animation_completed(std::string current_animation);
+    virtual void on_animation_completed(std::string current_animation) = 0;
 
 private:
     std::map<std::string, std::vector<SDL_Rect>> animations;

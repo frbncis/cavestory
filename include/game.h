@@ -1,8 +1,7 @@
 #include <animated_sprite.h>
 #include <graphics.h>
 #include <input.h>
-
-#include <sprite.h>
+#include <player.h>
 
 #pragma once
 
@@ -12,7 +11,7 @@ public:
     ~Game();
     void start_game_loop();
 private:
-    AnimatedSprite player_sprite;
+    Player player_sprite;
     Input input;
     
     void draw(Graphics &graphics);

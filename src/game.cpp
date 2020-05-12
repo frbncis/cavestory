@@ -2,6 +2,7 @@
 #include <graphics.h>
 #include <input.h>
 #include <iostream>
+#include <player.h>
 #include <SDL2/SDL.h>
 
 const int FPS = 50;
@@ -20,20 +21,7 @@ void Game::start_game_loop() {
     Graphics graphics;
     SDL_Event event;
 
-    player_sprite = AnimatedSprite(
-        graphics,
-        "content/sprites/MyChar.png",
-        0,
-        0,
-        16,
-        16,
-        100,
-        100,
-        150);
-
-    player_sprite.setup_animations();
-
-    player_sprite.play_animation("RUN_RIGHT");
+    player_sprite = Player(graphics, 100, 100);
 
     int last_update_time = SDL_GetTicks();
 
@@ -54,6 +42,16 @@ void Game::start_game_loop() {
 
         if (input.was_key_pressed(SDL_SCANCODE_ESCAPE)) {
             return;
+        } else if (input.is_key_held(SDL_SCANCODE_LEFT)) {
+            player_sprite.move_left();
+        } else if (input.is_key_held(SDL_SCANCODE_RIGHT)) {
+            player_sprite.move_right();
+        } else {
+            player_sprite.stop_moving();
+        }
+
+        if (!input.is_key_held(SDL_SCANCODE_LEFT) && !input.is_key_held(SDL_SCANCODE_RIGHT)) {
+            player_sprite.stop_moving();
         }
 
         const int current_time_ms = SDL_GetTicks();
@@ -70,18 +68,11 @@ void Game::start_game_loop() {
 void Game::draw(Graphics &graphics) {
     graphics.clear();
 
-    this->player_sprite.draw(graphics, 100, 100);
+    player_sprite.draw(graphics);
 
     graphics.flip();
 }
 
 void Game::update(float time_since_last_game_frame_update)  {
-
-    if (input.was_key_pressed(SDL_SCANCODE_LEFT)) {
-        player_sprite.play_animation("RUN_LEFT");
-    } else if (input.was_key_pressed(SDL_SCANCODE_RIGHT)) {
-        player_sprite.play_animation("RUN_RIGHT");
-    }
-
     player_sprite.update(time_since_last_game_frame_update);
 }
