@@ -12,7 +12,7 @@ struct Vector2 {
         : x(x), y(y) {
     }
 
-    Vector2 zero() {
+    static Vector2 zero() {
         return Vector2(0, 0);
     }
 };

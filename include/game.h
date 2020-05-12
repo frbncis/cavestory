@@ -1,6 +1,7 @@
 #include <animated_sprite.h>
 #include <graphics.h>
 #include <input.h>
+#include <level.h>
 #include <player.h>
 
 #pragma once
@@ -13,6 +14,7 @@ public:
 private:
     Player player_sprite;
     Input input;
+    Level level;
     
     void draw(Graphics &graphics);
     void update(float elapsed_time);
