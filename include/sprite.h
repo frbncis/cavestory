@@ -11,10 +11,11 @@ public:
     virtual void update();
     void draw(Graphics &graphics, int x, int y);
 
-private:
+protected:
     SDL_Rect source_rect;
     SDL_Texture* sprite_sheet;
 
+private:
     float position_x;
     float position_y;
 };

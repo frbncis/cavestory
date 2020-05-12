@@ -29,10 +29,8 @@ Sprite::Sprite(Graphics &graphics,
     auto* renderer = graphics.get_renderer();
     this->sprite_sheet = SDL_CreateTextureFromSurface(renderer, graphics.load_image(file_path));
 
-    // READ: I used nullptr, but he used null.. Are
-    // they equivalent?
-    if (this->sprite_sheet == NULL) {
-        std::cout << "Unable to load image at " << file_path;
+    if (sprite_sheet == nullptr) {
+        std::cout << "Unable to load image at " << file_path << "\n";
     }
 }
 

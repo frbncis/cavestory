@@ -18,10 +18,9 @@ Game::~Game() {
 
 void Game::start_game_loop() {
     Graphics graphics;
-    Input input;
     SDL_Event event;
 
-    this->player_sprite = Sprite(
+    player_sprite = AnimatedSprite(
         graphics,
         "content/sprites/MyChar.png",
         0,
@@ -29,7 +28,12 @@ void Game::start_game_loop() {
         16,
         16,
         100,
-        100);
+        100,
+        150);
+
+    player_sprite.setup_animations();
+
+    player_sprite.play_animation("RUN_RIGHT");
 
     int last_update_time = SDL_GetTicks();
 
@@ -53,9 +57,9 @@ void Game::start_game_loop() {
         }
 
         const int current_time_ms = SDL_GetTicks();
-        int frame_time_ms = current_time_ms - last_update_time;
+        int time_since_last_game_frame_update = current_time_ms - last_update_time;
         
-        this->update(std::min(frame_time_ms, MAX_FRAME_TIME));
+        this->update(std::min(time_since_last_game_frame_update, MAX_FRAME_TIME));
         
         last_update_time = current_time_ms;
 
@@ -71,6 +75,13 @@ void Game::draw(Graphics &graphics) {
     graphics.flip();
 }
 
-void Game::update(float) {
+void Game::update(float time_since_last_game_frame_update)  {
 
+    if (input.was_key_pressed(SDL_SCANCODE_LEFT)) {
+        player_sprite.play_animation("RUN_LEFT");
+    } else if (input.was_key_pressed(SDL_SCANCODE_RIGHT)) {
+        player_sprite.play_animation("RUN_RIGHT");
+    }
+
+    player_sprite.update(time_since_last_game_frame_update);
 }
