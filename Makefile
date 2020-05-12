@@ -3,12 +3,12 @@
 
 CXX				:= g++
 CXX_FLAGS		:= -Wall -Wextra -std=c++17 -ggdb $(sdl2-config --cflags)
-LINKER_FLAGS	:= -lSDL2 -lGL -lSDL2_image
+LINKER_FLAGS	:= 
 BIN				:= bin
 SRC				:= src
 INCLUDE			:= include
 LIB				:= LIB
-LIBRARIES		:= 
+LIBRARIES		:= -lSDL2 -lGL -lSDL2_image
 EXECUTABLE		:= cavestory
 
 
@@ -21,7 +21,7 @@ run: clean all
 
 $(BIN)/$(EXECUTABLE): $(SRC)/*.cpp
 	@echo "Building..."
-	$(CXX) $^  $(CXX_FLAGS) -I /usr/include/SDL2/ -I$(INCLUDE) $(LINKER_FLAGS) -L$(LIB) -o $@ $(LIBRARIES)
+	$(CXX) $^  $(CXX_FLAGS) -I /usr/include/SDL2/ -I$(INCLUDE) -L$(LIB) -o $@ $(LIBRARIES)
 
 clean:
 	@echo "Cleaning..."
