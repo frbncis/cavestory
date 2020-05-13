@@ -15,6 +15,7 @@ Graphics::Graphics(): screen_width(SCREEN_WIDTH), screen_height(SCREEN_HEIGHT), 
 }
 
 Graphics::~Graphics() {
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 }
 

@@ -36,10 +36,10 @@ void Level::draw(Graphics &graphics) {
 
     for (int x = 0; x < size.x / 64; x++) {
         for (int y = 0; y < size.y / 64; y++) {
-            destination_rectangle.x = x * 64;
-            destination_rectangle.y = y * 64;
-            destination_rectangle.h = 64;
-            destination_rectangle.w = 64;
+            destination_rectangle.x = x * 64 * graphics.sprite_scale_factor;
+            destination_rectangle.y = y * 64 * graphics.sprite_scale_factor;
+            destination_rectangle.h = 64 * graphics.sprite_scale_factor;
+            destination_rectangle.w = 64 * graphics.sprite_scale_factor;
 
             graphics.blit_surface(background_texture, &source_rectangle, &destination_rectangle);
         }
