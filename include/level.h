@@ -1,17 +1,22 @@
 #include <tile.h>
 #include <vector2.h>
 
+#include <cstdint>
 #include <string>
 #include <vector>
+
+#include <SDL2/SDL.h>
 
 #pragma once
 
 class Graphics;
-struct SDL_Texture;
 
 struct TileSet {
     SDL_Texture* texture;
     int first_gid;
+
+    int width;
+    int height;
     
     TileSet(): first_gid(-1) { }
 
@@ -22,6 +27,7 @@ struct TileSet {
         texture(texture),
         first_gid(first_gid) {
 
+        SDL_QueryTexture(texture, NULL, NULL, &width, &height);
     }
 };
 
