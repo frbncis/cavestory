@@ -1,4 +1,5 @@
 #include <graphics.h>
+#include <rectangle.h>
 
 #pragma once
 
@@ -11,9 +12,15 @@ public:
     virtual void update();
     void draw(Graphics &graphics, int x, int y);
 
+    Rectangle get_bounding_box();
+
+    const sides::Side get_colliding_side(Rectangle &colliding_rectangle) const;
+
 protected:
     SDL_Rect source_rect;
     SDL_Texture* sprite_sheet;
+
+    Rectangle bounding_box;
 
     float position_x;
     float position_y;

@@ -1,5 +1,6 @@
 #include <level.h>
 #include <graphics.h>
+#include <rectangle.h>
 #include <vector2.h>
 
 #include <SDL2/SDL.h>
@@ -14,9 +15,8 @@ using namespace tinyxml2;
 
 Level::Level() {}
 
-Level::Level(std::string map_name, Vector2 spawn_point, Graphics &graphics):
+Level::Level(std::string map_name, Graphics &graphics):
     map_name(map_name),
-    spawn_point(spawn_point),
     size(Vector2::zero()) {
 
     load_map(map_name, graphics);
@@ -30,7 +30,7 @@ void Level::load_map(std::string map_name, Graphics &graphics) {
     XMLDocument document;
 
     std::stringstream stream;
-    stream << "content/maps/" << map_name << ".tmx";
+    stream << "maps/" << map_name << ".tmx";
 
     std::cout << "Loading map \"" << map_name << "\" at " << stream.str() << "\n";
 
@@ -59,7 +59,9 @@ void Level::load_map(std::string map_name, Graphics &graphics) {
 
             std::stringstream resolved_tile_set_path_builder;
 
-            resolved_tile_set_path_builder << "content/tilesets/" << tile_set_path;
+            // The map files reference image assets relative to themselves
+            // in the map folder, but we are executing in the project root.
+            resolved_tile_set_path_builder << "maps/" << tile_set_path;
 
             std::cout << "Loading tile set at " << resolved_tile_set_path_builder.str() << "\n";
 
@@ -69,6 +71,9 @@ void Level::load_map(std::string map_name, Graphics &graphics) {
                 graphics.get_renderer(),
                 graphics.load_image(resolved_tile_set_path_builder.str()));
 
+            if (tile_set_texture == nullptr) {
+                std::cout << "Failed to load tile set texture for " << resolved_tile_set_path_builder.str() << "\n";
+            }
             tile_sets.push_back(TileSet(tile_set_texture, first_gid));
 
             tile_set_node = tile_set_node->NextSiblingElement("tileset");
@@ -172,9 +177,76 @@ void Level::load_map(std::string map_name, Graphics &graphics) {
 
             layer_element = layer_element->NextSiblingElement("layer");
         }
-
-        std::cout << "Done loading map \"" << map_name << "\"!\n";
     }
+
+    XMLElement* object_group_node = map_node->FirstChildElement("objectgroup");
+
+    if (object_group_node != nullptr) {
+        while (object_group_node) {
+            const char* name = object_group_node->Attribute("name");
+
+            std::stringstream string_stream;
+            string_stream << name;
+
+            if (string_stream.str() == "collisions") {
+                std::cout << "Parsing collisions" << "\n";
+
+                XMLElement* object_node = object_group_node->FirstChildElement("object");
+
+                if (object_node != nullptr) {
+                    while (object_node) {
+                        float x, y, width, height;
+
+                        int object_id = object_node->IntAttribute("id");
+
+                        std::cout << "Processing collision object ID " << object_id << "\n";
+                        
+                        x = object_node->FloatAttribute("x");
+                        y = object_node->FloatAttribute("y");
+                        width = object_node->FloatAttribute("width");
+                        height = object_node->FloatAttribute("height");
+
+                        // TODO: Limeoats has his rectangle multipled by sprite scale.
+                        // I don't like having what feels like a rendering property here,
+                        // so make sure that it's handled elsewhere accoridngly.
+                        collidable_rectangles.push_back(Rectangle(std::ceil(x) * 2, std::ceil(y) * 2, std::ceil(width) * 2, std::ceil(height) * 2));
+                        
+                        object_node = object_node->NextSiblingElement("object");
+                    }
+                }
+            } else if (string_stream.str() == "spawn points") {
+                std::cout << "Parsing spawn points" << "\n";
+
+                XMLElement* object_node = object_group_node->FirstChildElement("object");
+
+                if (object_node != nullptr) {
+                    while (object_node) {
+                        float x, y;
+                        
+                        x = object_node->FloatAttribute("x");
+                        y = object_node->FloatAttribute("y");
+
+                        const char* name = object_node->Attribute("name");
+
+                        std::stringstream ss;
+
+                        ss << name;
+
+                        if (ss.str() == "player") {
+                            //  TODO: Handle the sprite scale factor here.
+                            spawn_point = Vector2(std::ceil(x) * 2, std::ceil(y) *2);
+                        }
+
+                        object_node = object_node->NextSiblingElement("object");
+                    }
+                }
+            }
+
+            object_group_node = object_group_node->NextSiblingElement("objectgroup");
+        }
+    }
+
+    std::cout << "Done loading map \"" << map_name << "\"!\n";
 }
 
 void Level::update(int time_elapsed) {
@@ -185,4 +257,24 @@ void Level::draw(Graphics &graphics) {
     for (int i = 0; i < tiles.size(); i++) {
         tiles.at(i).draw(graphics);
     }
+
+    for (int i = 0; i < collidable_rectangles.size(); i++) {
+        collidable_rectangles.at(i).draw(graphics);
+    }
+}
+
+std::vector<Rectangle> Level::get_colliding_rectangle(Rectangle &rectangle) {
+    std::vector<Rectangle> colliding_rectangles;
+
+    for (int i = 0; i < collidable_rectangles.size(); i++) {
+        if (collidable_rectangles.at(i).collides_with(&rectangle)) {
+            colliding_rectangles.push_back(collidable_rectangles.at(i));
+        }
+    }
+
+    return colliding_rectangles;
+}
+
+Vector2 Level::get_player_spawn_point() {
+    return spawn_point;
 }

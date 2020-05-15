@@ -1,9 +1,13 @@
 #include <game.h>
+#include <getexepath.h>
 #include <graphics.h>
 #include <input.h>
 #include <iostream>
 #include <player.h>
+#include <rectangle.h>
 #include <SDL2/SDL.h>
+
+#include <vector>
 
 const int FPS = 50;
 const int MAX_FRAME_TIME = 5 * 1000 / FPS;
@@ -11,6 +15,8 @@ const int MAX_FRAME_TIME = 5 * 1000 / FPS;
 Game::Game() {
     // TODO: Should this be moved to be handled by Graphics?
     SDL_Init(SDL_INIT_EVERYTHING);
+
+    std::cout << "Game engine started in folder " << getexepath() << "\n";
 }
 
 Game::~Game() {
@@ -21,8 +27,8 @@ void Game::start_game_loop() {
     Graphics graphics;
     SDL_Event event;
 
-    player_sprite = Player(graphics, 100, 100);
-    level = Level("Map 1", Vector2(100, 100), graphics);
+    level = Level("Map 1", graphics);
+    player_sprite = Player(graphics, level.get_player_spawn_point());
 
     int last_update_time = SDL_GetTicks();
 
@@ -78,4 +84,12 @@ void Game::draw(Graphics &graphics) {
 void Game::update(float time_since_last_game_frame_update)  {
     level.update(time_since_last_game_frame_update);
     player_sprite.update(time_since_last_game_frame_update);
+
+    Rectangle box = player_sprite.get_bounding_box();
+
+    std::vector<Rectangle> colliding_rectangles = level.get_colliding_rectangle(box);
+
+    if (colliding_rectangles.size() > 0) {
+        player_sprite.on_tile_collision(colliding_rectangles);
+    }
 }

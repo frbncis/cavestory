@@ -1,7 +1,9 @@
 #include <tile.h>
+#include <rectangle.h>
 #include <vector2.h>
 
 #include <cstdint>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -34,11 +36,14 @@ struct TileSet {
 class Level {
 public:
     Level();
-    Level(std::string map_name, Vector2 spawn_point, Graphics &graphics);
+    Level(std::string map_name, Graphics &graphics);
     ~Level();
 
     void update(int time_elapsed);
     void draw(Graphics &graphics);
+
+    std::vector<Rectangle> get_colliding_rectangle(Rectangle &rectangle);
+    Vector2 get_player_spawn_point();
 
 private:
     std::string map_name;
@@ -51,6 +56,7 @@ private:
     std::vector<Tile> tiles;
     std::vector<TileSet> tile_sets;
 
+    std::vector<Rectangle> collidable_rectangles;
 
     void load_map(std::string map_name, Graphics &graphics);
 };

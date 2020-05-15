@@ -7,15 +7,11 @@ void Input::begin_new_frame() {
 }
 
 void Input::key_down_handler(const SDL_Event& event) {
-    std::cout << "Got key down _" << event.key.keysym.scancode << "_\n";
-
     this->pressed_keys[event.key.keysym.scancode] = true;
     this->held_keys[event.key.keysym.scancode] = true;
 }
 
 void Input::key_up_handler(const SDL_Event& event) {
-    std::cout << "Got key up _" << event.key.keysym.scancode << "_\n";
-
     this->released_keys[event.key.keysym.scancode] = true;
     this->held_keys[event.key.keysym.scancode] = false;
 }
