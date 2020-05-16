@@ -85,11 +85,14 @@ void Game::update(float time_since_last_game_frame_update)  {
     level.update(time_since_last_game_frame_update);
     player_sprite.update(time_since_last_game_frame_update);
 
-    Rectangle box = player_sprite.get_bounding_box();
+    Rectangle player_bounding_box = player_sprite.get_bounding_box();
 
-    std::vector<Rectangle> colliding_rectangles = level.get_colliding_rectangle(box);
+    std::vector<Rectangle> colliding_rectangles = level.get_colliding_rectangle(player_bounding_box);
+    std::vector<Slope> colliding_slopes = level.get_colliding_slopes(player_bounding_box);
 
     if (colliding_rectangles.size() > 0) {
         player_sprite.on_tile_collision(colliding_rectangles);
     }
+
+    player_sprite.on_slope_collision(colliding_slopes);
 }

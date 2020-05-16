@@ -88,12 +88,8 @@ public:
         SDL_Rect rect = { x, y, width, height };
         auto renderer = graphics.get_renderer();
 
-        // Uint8 r, g, b, a;
-        // SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
-
         SDL_SetRenderDrawColor(renderer, color.red, color.green, color.blue, color.alpha);
         SDL_RenderDrawRect(renderer, &rect);
-        // SDL_SetRenderDrawColor(renderer, r, g, b, a);
     }
 private:
     int x, y, width, height;

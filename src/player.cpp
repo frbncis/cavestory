@@ -1,6 +1,7 @@
 #include <animated_sprite.h>
 #include <graphics.h>
 #include <player.h>
+#include <slope.h>
 
 #include <iostream>
 
@@ -37,6 +38,10 @@ Player::Player(Graphics &graphics, Vector2 spawn_point) :
 
 void Player::on_animation_completed(std::string current_animation) {
 
+}
+
+void Player::jump() {
+    delta_y = -GRAVITY;
 }
 
 void Player::move_left() {
@@ -86,6 +91,18 @@ void Player::on_tile_collision(std::vector<Rectangle> &colliding_rectangles) {
     }
 }
 
+void Player::on_slope_collision(std::vector<Slope> &colliding_slopes) {
+    this->colliding_slopes = colliding_slopes;
+
+    // TODO: Can we have more than one slope collision...?
+    for (int i = 0; i < colliding_slopes.size(); i++) {
+        Slope slope = colliding_slopes.at(i);
+        int new_y = slope.get_position_y(position_x);
+        delta_y = -slope.get_slope();
+        std::cout << "Slope collision, player position would be x=" << position_x << ", y=" << new_y << "\n";
+    }
+}
+
 void Player::setup_animations() {
     this->add_animation(1, 0, 0, PlayerAnimations::IdleLeft, 16, 16, Vector2(0, 0));
     this->add_animation(1, 0, 16, PlayerAnimations::IdleRight, 16, 16, Vector2(0, 0));
@@ -103,6 +120,8 @@ void Player::update(float time_elapsed) {
     position_y += delta_y * time_elapsed;
 
     AnimatedSprite::update(time_elapsed);
+
+    bounding_box = Rectangle(position_x, position_y, source_rect.w * 1.75, source_rect.h * 1.75);
 }
 
 void Player::draw(Graphics &graphics) {
@@ -112,6 +131,10 @@ void Player::draw(Graphics &graphics) {
 
     for (int i = 0; i < colliding_rectangles.size(); i++) {
         colliding_rectangles.at(i).draw(graphics, { 255, 0, 0, 255 });
+    }
+
+    for (int i = 0; i < colliding_slopes.size(); i++) {
+        colliding_slopes.at(i).draw(graphics, { 255, 0, 0, 255 });
     }
 }
 

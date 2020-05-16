@@ -15,4 +15,8 @@ struct Vector2 {
     static Vector2 zero() {
         return Vector2(0, 0);
     }
+
+    Vector2 operator*(int operand) {
+        return Vector2(x * operand, y * operand);
+    }
 };

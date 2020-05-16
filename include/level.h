@@ -1,5 +1,6 @@
 #include <tile.h>
 #include <rectangle.h>
+#include <slope.h>
 #include <vector2.h>
 
 #include <cstdint>
@@ -43,6 +44,8 @@ public:
     void draw(Graphics &graphics);
 
     std::vector<Rectangle> get_colliding_rectangle(Rectangle &rectangle);
+    std::vector<Slope> get_colliding_slopes(Rectangle &rectangle);
+
     Vector2 get_player_spawn_point();
 
 private:
@@ -57,6 +60,7 @@ private:
     std::vector<TileSet> tile_sets;
 
     std::vector<Rectangle> collidable_rectangles;
+    std::vector<Slope> collidable_slopes;
 
     void load_map(std::string map_name, Graphics &graphics);
 };

@@ -1,5 +1,6 @@
-#include<animated_sprite.h>
-#include<direction.h>
+#include <animated_sprite.h>
+#include <direction.h>
+#include <slope.h>
 
 #pragma once
 
@@ -19,6 +20,7 @@ public:
 
     void move_left();
     void move_right();
+    void jump();
     void stop_moving();
 
     virtual void on_animation_completed(std::string current_animation);
@@ -28,6 +30,7 @@ public:
     const float get_position_y() const;
 
     void on_tile_collision(std::vector<Rectangle> &colliding_rectangles);
+    void on_slope_collision(std::vector<Slope> &colliding_slopes);
 
 private:
     float delta_x;
@@ -38,4 +41,5 @@ private:
     Direction facing;
 
     std::vector<Rectangle> colliding_rectangles;
+    std::vector<Slope> colliding_slopes;
 };

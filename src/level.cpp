@@ -1,6 +1,7 @@
 #include <level.h>
 #include <graphics.h>
 #include <rectangle.h>
+#include <string_split.h>
 #include <vector2.h>
 
 #include <SDL2/SDL.h>
@@ -27,6 +28,9 @@ Level::~Level() { }
 void Level::load_map(std::string map_name, Graphics &graphics) {
     // TODO: Refactor this out to a tsx parser class.
     // Parse the tsx file to build out the map.
+    // XML node traversal is pretty identical, would be a good place to practice
+    // lambdas with recursion.
+
     XMLDocument document;
 
     std::stringstream stream;
@@ -240,6 +244,61 @@ void Level::load_map(std::string map_name, Graphics &graphics) {
                         object_node = object_node->NextSiblingElement("object");
                     }
                 }
+            } else if (string_stream.str() == "slopes") {
+                std::cout << "Parsing slopes" << "\n";
+
+                XMLElement* object_node = object_group_node->FirstChildElement("object");
+
+                if (object_node != nullptr) {
+                    while (object_node) {
+                        std::vector<Vector2> slope_points;
+                        
+                        Vector2 anchor = Vector2(
+                            std::ceil(object_node->FloatAttribute("x")),
+                            std::ceil(object_node->FloatAttribute("y"))
+                        );
+
+                        XMLElement* polyline = object_node->FirstChildElement("polyline");
+
+                        if (polyline != nullptr) {
+                            std::vector<std::string> line_segment_string_pair;
+
+                            // TODO: Add extension method to extract strings from 
+                            // XMLElement
+                            const char* point_string = polyline->Attribute("points");
+
+                            std::stringstream ss;
+
+                            ss << point_string;
+
+                            // TODO: Optimization possible, we can just scan along the string
+                            // in a single pass and create string/int tokens based on ' ' and ','.
+                            // Right now this takes a few passes through. *shrug*
+                            line_segment_string_pair = split(ss.str(), ' ');
+
+                            for (int i = 0; i < line_segment_string_pair.size() - 1; i++) {
+
+                                auto start_points = split(line_segment_string_pair.at(i), ',');
+                                auto end_points = split(line_segment_string_pair.at(i + 1), ',');
+
+                                // TODO: Sprite scale
+                                auto start_point_v = Vector2(
+                                    anchor.x + std::stoi(start_points[0]),
+                                    anchor.y + std::stoi(start_points[1])
+                                ) * 2;
+
+                                auto end_point_v = Vector2(
+                                    anchor.x + std::stoi(end_points[0]),
+                                    anchor.y + std::stoi(end_points[1])
+                                ) * 2;
+
+                                collidable_slopes.push_back(Slope(start_point_v, end_point_v));
+                            }
+                        }
+
+                        object_node = object_node->NextSiblingElement("object");
+                    }
+                }
             }
 
             object_group_node = object_group_node->NextSiblingElement("objectgroup");
@@ -259,7 +318,11 @@ void Level::draw(Graphics &graphics) {
     }
 
     for (int i = 0; i < collidable_rectangles.size(); i++) {
-        collidable_rectangles.at(i).draw(graphics);
+        collidable_rectangles.at(i).draw(graphics, { 0, 0, 255, 255 });
+    }
+
+    for (int i = 0; i < collidable_slopes.size(); i++) {
+        collidable_slopes.at(i).draw(graphics, { 0, 0, 255, 255, });
     }
 }
 
@@ -273,6 +336,18 @@ std::vector<Rectangle> Level::get_colliding_rectangle(Rectangle &rectangle) {
     }
 
     return colliding_rectangles;
+}
+
+std::vector<Slope> Level::get_colliding_slopes(Rectangle &rectangle) {
+    std::vector<Slope> colliding_slopes;
+
+    for (int i = 0; i < collidable_slopes.size(); i++) {
+        if (collidable_slopes.at(i).collides_with(&rectangle)) {
+            colliding_slopes.push_back(collidable_slopes.at(i));
+        }
+    }
+
+    return colliding_slopes;
 }
 
 Vector2 Level::get_player_spawn_point() {
