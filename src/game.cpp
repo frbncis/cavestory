@@ -5,6 +5,8 @@
 #include <iostream>
 #include <player.h>
 #include <rectangle.h>
+#include <tsx_level_factory.h>
+
 #include <SDL2/SDL.h>
 
 #include <vector>
@@ -28,8 +30,10 @@ Game::~Game() {
 void Game::start_game_loop() {
     Graphics graphics;
     SDL_Event event;
+    TsxLevelFactory level_factory = TsxLevelFactory(graphics);
 
-    level = Level("Map 1", graphics);
+    level = level_factory.load_map("Map 1");
+
     player_sprite = Player(graphics, level.get_player_spawn_point());
 
     int last_update_time = SDL_GetTicks();

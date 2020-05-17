@@ -37,7 +37,7 @@ struct TileSet {
 class Level {
 public:
     Level();
-    Level(std::string map_name, Graphics &graphics);
+    Level(std::string map_name, std::vector<Tile> tiles, std::vector<TileSet> tile_sets, std::vector<Rectangle> collidable_rectangles, std::vector<Slope> collidable_slopes);
     ~Level();
 
     void update(int time_elapsed);
@@ -47,20 +47,15 @@ public:
     std::vector<Slope> get_colliding_slopes(Rectangle &rectangle);
 
     Vector2 get_player_spawn_point();
+    void set_player_spawn_point(int x, int y);
 
 private:
     std::string map_name;
     Vector2 spawn_point;
 
-    Vector2 size;
-    Vector2 tile_size;
-
-    SDL_Texture* background_texture;
     std::vector<Tile> tiles;
     std::vector<TileSet> tile_sets;
 
     std::vector<Rectangle> collidable_rectangles;
     std::vector<Slope> collidable_slopes;
-
-    void load_map(std::string map_name, Graphics &graphics);
 };
