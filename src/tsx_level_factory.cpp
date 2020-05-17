@@ -23,7 +23,7 @@ Level TsxLevelFactory::load_map(std::string map_name) {
     // TODO: This group of variables is taken from Level's privates,
     // need to figure out what are relevant fields for Level.
     Vector2 spawn_point;
-    Vector2 size;
+    Vector2 map_size;
     Vector2 tile_size;
     SDL_Texture* background_texture;
     std::vector<Tile> tiles;
@@ -44,144 +44,16 @@ Level TsxLevelFactory::load_map(std::string map_name) {
 
     // TODO: Does this get mad/modify a static version of
     // Vector2::zero()?
-    map_node->QueryIntAttribute("width", &size.x);
-    map_node->QueryIntAttribute("height", &size.y);
+    map_node->QueryIntAttribute("width", &map_size.x);
+    map_node->QueryIntAttribute("height", &map_size.y);
 
     map_node->QueryIntAttribute("tilewidth", &tile_size.x);
     map_node->QueryIntAttribute("tileheight", &tile_size.y);
 
-    std::cout << "Map is " << size.x << " x " << size.y << "\n";
+    std::cout << "Map is " << map_size.x << " x " << map_size.y << "\n";
 
-    // Load the tile sets.
-    XMLElement* tile_set_node = map_node->FirstChildElement("tileset");
-
-    if (tile_set_node != nullptr) {
-        while (tile_set_node) {
-            int first_gid;
-
-            const char* tile_set_path = tile_set_node->FirstChildElement("image")->Attribute("source");
-
-            std::stringstream resolved_tile_set_path_builder;
-
-            // The map files reference image assets relative to themselves
-            // in the map folder, but we are executing in the project root.
-            resolved_tile_set_path_builder << "maps/" << tile_set_path;
-
-            std::cout << "Loading tile set at " << resolved_tile_set_path_builder.str() << "\n";
-
-            tile_set_node->QueryIntAttribute("firstgid", &first_gid);
-
-            SDL_Texture* tile_set_texture = SDL_CreateTextureFromSurface(
-                graphics.get_renderer(),
-                graphics.load_image(resolved_tile_set_path_builder.str()));
-
-            if (tile_set_texture == nullptr) {
-                std::cout << "Failed to load tile set texture for " << resolved_tile_set_path_builder.str() << "\n";
-            }
-            tile_sets.push_back(TileSet(tile_set_texture, first_gid));
-
-            tile_set_node = tile_set_node->NextSiblingElement("tileset");
-        }
-    }
-
-    XMLElement* layer_element = map_node->FirstChildElement("layer");
-
-    // TODO: Refactor this to a TmxParser class.
-    if (layer_element != nullptr) {
-        while (layer_element) {
-            XMLElement* data_element = layer_element->FirstChildElement("data");
-
-            // READ: How does char* work? How does strinstream know when it ends?
-            // I was expecting char[]*.
-            int data_id = data_element->IntAttribute("id");
-
-            std::cout << "Processing tmx layer element ID=" << data_element << "\n";
-
-            if (data_element != nullptr) {
-                while (data_element) {
-
-                    XMLElement* tile_element = data_element->FirstChildElement("tile");
-
-                    if (tile_element != nullptr) {
-                        int tile_counter = 0;
-
-                        while (tile_element) {
-                            std::cout << "Processing tile number " << tile_counter << "\n";
-
-                            int current_gid = tile_element->IntAttribute("gid");
-
-                            if (current_gid == 0) {
-                                tile_counter++;
-
-                                
-                                if (tile_element->NextSiblingElement("tile")) {
-                                    tile_element = tile_element->NextSiblingElement("tile");
-                                    continue;
-                                } else {
-                                    break;
-                                }
-                            }
-
-                            int gid = tile_element->IntAttribute("gid");
-                            TileSet tile_set;
-
-                            // TODO: Range operator?
-                            for (int i = 0; i < tile_sets.size(); i++) {
-                                if (tile_sets[i].first_gid <= gid) {
-                                    tile_set = tile_sets[i];
-                                    break;
-                                }
-                            }
-
-                            if (tile_set.first_gid == -1) {
-                                tile_counter++;
-
-                                if (tile_element->NextSiblingElement("tile")) {
-                                    tile_element = tile_element->NextSiblingElement("tile");
-                                    continue;
-                                }
-                                else {
-                                    break;
-                                }
-                            }
-
-                            // Convert the tile_counter to x, y coordinates
-                            // on the map.
-                            int xx = (tile_counter % size.x) * tile_size.x;
-                            int yy = (tile_counter / size.x) * tile_size.y;
-                            Vector2 tile_position = Vector2(xx, yy);
-
-                            // Get the tile's position in the tile set.
-                            // TODO: Refactor.
-                            int tsxx = gid % (tile_set.width / tile_size.x) - 1;
-                            tsxx *= tile_size.x;
-
-                            int amount = (gid / (tile_set.width / tile_size.x));
-
-                            int tsyy = 0;
-                            tsyy = tile_size.y * amount;
-
-                            Vector2 tile_set_position = Vector2(tsxx, tsyy);
-
-                            std::cout << "Tile " << tile_counter << " at position (" << tile_position.x << "," << tile_position.y << ")\n";
-
-                            // Build Tile object and add it to level tile list.
-                            Tile tile(tile_set.texture, tile_size, tile_set_position, tile_position);
-
-                            tiles.push_back(tile);
-
-                            tile_counter++;
-                            tile_element = tile_element->NextSiblingElement("tile");
-                        }
-                    }
-
-                    data_element = data_element->NextSiblingElement("data");
-                }
-            }
-
-            layer_element = layer_element->NextSiblingElement("layer");
-        }
-    }
+    tile_sets = parse_tile_sets(map_node);
+    tiles = parse_tiles(map_node, tile_sets, map_size, tile_size);
 
     XMLElement* object_group_node = map_node->FirstChildElement("objectgroup");
 
@@ -312,4 +184,146 @@ Level TsxLevelFactory::load_map(std::string map_name) {
     level.set_player_spawn_point(spawn_point.x, spawn_point.y);
 
     return level;
+}
+
+std::vector<TileSet> TsxLevelFactory::parse_tile_sets(XMLElement* map_node) {
+    std::vector<TileSet> tile_sets;
+
+    // Load the tile sets.
+    XMLElement* tile_set_node = map_node->FirstChildElement("tileset");
+
+    if (tile_set_node != nullptr) {
+        while (tile_set_node) {
+            int first_gid;
+
+            const char* tile_set_path = tile_set_node->FirstChildElement("image")->Attribute("source");
+
+            std::stringstream resolved_tile_set_path_builder;
+
+            // The map files reference image assets relative to themselves
+            // in the map folder, but we are executing in the project root.
+            resolved_tile_set_path_builder << "maps/" << tile_set_path;
+
+            std::cout << "Loading tile set at " << resolved_tile_set_path_builder.str() << "\n";
+
+            tile_set_node->QueryIntAttribute("firstgid", &first_gid);
+
+            SDL_Texture* tile_set_texture = SDL_CreateTextureFromSurface(
+                graphics.get_renderer(),
+                graphics.load_image(resolved_tile_set_path_builder.str()));
+
+            if (tile_set_texture == nullptr) {
+                std::cout << "Failed to load tile set texture for " << resolved_tile_set_path_builder.str() << "\n";
+            }
+            tile_sets.push_back(TileSet(tile_set_texture, first_gid));
+
+            tile_set_node = tile_set_node->NextSiblingElement("tileset");
+        }
+    }
+
+    return tile_sets;
+}
+
+std::vector<Tile> TsxLevelFactory::parse_tiles(XMLElement* map_node, std::vector<TileSet> tile_sets, Vector2 map_size, Vector2 tile_size) {
+    std::vector<Tile> tiles;
+
+    XMLElement* layer_element = map_node->FirstChildElement("layer");
+
+    // TODO: Refactor this to a TmxParser class.
+    if (layer_element != nullptr) {
+        while (layer_element) {
+            XMLElement* data_element = layer_element->FirstChildElement("data");
+
+            // READ: How does char* work? How does strinstream know when it ends?
+            // I was expecting char[]*.
+            int data_id = data_element->IntAttribute("id");
+
+            std::cout << "Processing tmx layer element ID=" << data_element << "\n";
+
+            if (data_element != nullptr) {
+                while (data_element) {
+
+                    XMLElement* tile_element = data_element->FirstChildElement("tile");
+
+                    if (tile_element != nullptr) {
+                        int tile_counter = 0;
+
+                        while (tile_element) {
+                            std::cout << "Processing tile number " << tile_counter << "\n";
+
+                            int current_gid = tile_element->IntAttribute("gid");
+
+                            if (current_gid == 0) {
+                                tile_counter++;
+                                
+                                if (tile_element->NextSiblingElement("tile")) {
+                                    tile_element = tile_element->NextSiblingElement("tile");
+                                    continue;
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            int gid = tile_element->IntAttribute("gid");
+                            TileSet tile_set;
+
+                            // TODO: Range operator?
+                            for (int i = 0; i < tile_sets.size(); i++) {
+                                if (tile_sets[i].first_gid <= gid) {
+                                    tile_set = tile_sets[i];
+                                    break;
+                                }
+                            }
+
+                            if (tile_set.first_gid == -1) {
+                                tile_counter++;
+
+                                if (tile_element->NextSiblingElement("tile")) {
+                                    tile_element = tile_element->NextSiblingElement("tile");
+                                    continue;
+                                }
+                                else {
+                                    break;
+                                }
+                            }
+
+                            // Convert the tile_counter to x, y coordinates
+                            // on the map.
+                            int xx = (tile_counter % map_size.x) * tile_size.x;
+                            int yy = (tile_counter / map_size.x) * tile_size.y;
+                            Vector2 tile_position = Vector2(xx, yy);
+
+                            // Get the tile's position in the tile set.
+                            // TODO: Refactor.
+                            int tsxx = gid % (tile_set.width / tile_size.x) - 1;
+                            tsxx *= tile_size.x;
+
+                            int amount = (gid / (tile_set.width / tile_size.x));
+
+                            int tsyy = 0;
+                            tsyy = tile_size.y * amount;
+
+                            Vector2 tile_set_position = Vector2(tsxx, tsyy);
+
+                            std::cout << "Tile " << tile_counter << " at position (" << tile_position.x << "," << tile_position.y << ")\n";
+
+                            // Build Tile object and add it to level tile list.
+                            Tile tile(tile_set.texture, tile_size, tile_set_position, tile_position);
+
+                            tiles.push_back(tile);
+
+                            tile_counter++;
+                            tile_element = tile_element->NextSiblingElement("tile");
+                        }
+                    }
+
+                    data_element = data_element->NextSiblingElement("data");
+                }
+            }
+
+            layer_element = layer_element->NextSiblingElement("layer");
+        }
+    }
+
+    return tiles;
 }
