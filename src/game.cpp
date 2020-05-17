@@ -12,6 +12,8 @@
 const int FPS = 50;
 const int MAX_FRAME_TIME = 5 * 1000 / FPS;
 
+bool Game::GAME_DEBUG;
+
 Game::Game() {
     // TODO: Should this be moved to be handled by Graphics?
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -55,6 +57,14 @@ void Game::start_game_loop() {
             player_sprite.move_right();
         } else {
             player_sprite.stop_moving();
+        }
+
+        if (input.was_key_pressed(SDL_SCANCODE_Z)) {
+            player_sprite.jump();
+        }
+
+        if (input.was_key_pressed(SDL_SCANCODE_F3)) {
+            Game::GAME_DEBUG = !Game::GAME_DEBUG;
         }
 
         if (!input.is_key_held(SDL_SCANCODE_LEFT) && !input.is_key_held(SDL_SCANCODE_RIGHT)) {

@@ -1,4 +1,5 @@
 #include <level.h>
+#include <game.h>
 #include <graphics.h>
 #include <rectangle.h>
 #include <string_split.h>
@@ -317,12 +318,14 @@ void Level::draw(Graphics &graphics) {
         tiles.at(i).draw(graphics);
     }
 
-    for (int i = 0; i < collidable_rectangles.size(); i++) {
-        collidable_rectangles.at(i).draw(graphics, { 0, 0, 255, 255 });
-    }
+    if (Game::GAME_DEBUG) {
+        for (int i = 0; i < collidable_rectangles.size(); i++) {
+            collidable_rectangles.at(i).draw(graphics, { 0, 0, 255, 255 });
+        }
 
-    for (int i = 0; i < collidable_slopes.size(); i++) {
-        collidable_slopes.at(i).draw(graphics, { 0, 0, 255, 255, });
+        for (int i = 0; i < collidable_slopes.size(); i++) {
+            collidable_slopes.at(i).draw(graphics, { 0, 0, 255, 255, });
+        }
     }
 }
 

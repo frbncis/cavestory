@@ -1,4 +1,5 @@
 #include <animated_sprite.h>
+#include <game.h>
 #include <graphics.h>
 #include <player.h>
 #include <slope.h>
@@ -41,7 +42,10 @@ void Player::on_animation_completed(std::string current_animation) {
 }
 
 void Player::jump() {
-    delta_y = -GRAVITY;
+    if (is_grounded) {
+        delta_y = -JUMP_SPEED;
+        is_grounded = false;
+    }
 }
 
 void Player::move_left() {
@@ -97,9 +101,13 @@ void Player::on_slope_collision(std::vector<Slope> &colliding_slopes) {
     // TODO: Can we have more than one slope collision...?
     for (int i = 0; i < colliding_slopes.size(); i++) {
         Slope slope = colliding_slopes.at(i);
-        int new_y = slope.get_position_y(position_x);
-        delta_y = -slope.get_slope();
-        std::cout << "Slope collision, player position would be x=" << position_x << ", y=" << new_y << "\n";
+
+        // TODO: Get rid of magic number.
+        int new_y = slope.get_position_y(bounding_box.get_center_x()) - 8;
+
+        if (is_grounded) {
+            position_y = new_y - bounding_box.get_height();
+        }
     }
 }
 
@@ -121,20 +129,22 @@ void Player::update(float time_elapsed) {
 
     AnimatedSprite::update(time_elapsed);
 
-    bounding_box = Rectangle(position_x, position_y, source_rect.w * 1.75, source_rect.h * 1.75);
+    bounding_box = Rectangle(position_x, position_y, source_rect.w * 1.75, source_rect.h * 2);
 }
 
 void Player::draw(Graphics &graphics) {
     AnimatedSprite::draw(graphics, position_x, position_y);
 
-    bounding_box.draw(graphics, { 0, 255, 0, 255 });
+    if (Game::GAME_DEBUG) {
+        bounding_box.draw(graphics, { 0, 255, 0, 255 });
 
-    for (int i = 0; i < colliding_rectangles.size(); i++) {
-        colliding_rectangles.at(i).draw(graphics, { 255, 0, 0, 255 });
-    }
+        for (int i = 0; i < colliding_rectangles.size(); i++) {
+            colliding_rectangles.at(i).draw(graphics, { 255, 0, 0, 255 });
+        }
 
-    for (int i = 0; i < colliding_slopes.size(); i++) {
-        colliding_slopes.at(i).draw(graphics, { 255, 0, 0, 255 });
+        for (int i = 0; i < colliding_slopes.size(); i++) {
+            colliding_slopes.at(i).draw(graphics, { 255, 0, 0, 255 });
+        }
     }
 }
 

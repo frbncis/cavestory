@@ -8,8 +8,11 @@
 
 class Game {
 public:
+    static bool GAME_DEBUG;
+
     Game();
     ~Game();
+
     void start_game_loop();
 private:
     Player player_sprite;

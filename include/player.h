@@ -7,6 +7,8 @@
 class Player : public AnimatedSprite {
 public:
     static constexpr float WALK_SPEED = 0.2f;
+    
+    static constexpr float JUMP_SPEED = 0.6f;
 
     static constexpr float GRAVITY = 0.002f;
 
