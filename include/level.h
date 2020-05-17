@@ -1,3 +1,4 @@
+#include <animated_tile.h>
 #include <tile.h>
 #include <rectangle.h>
 #include <slope.h>
@@ -37,7 +38,7 @@ struct TileSet {
 class Level {
 public:
     Level();
-    Level(std::string map_name, std::vector<Tile> tiles, std::vector<TileSet> tile_sets, std::vector<Rectangle> collidable_rectangles, std::vector<Slope> collidable_slopes);
+    Level(std::string map_name, std::vector<Tile> tiles, std::vector<AnimatedTile> animated_tiles, std::vector<TileSet> tile_sets, std::vector<Rectangle> collidable_rectangles, std::vector<Slope> collidable_slopes);
     ~Level();
 
     void update(int time_elapsed);
@@ -55,6 +56,9 @@ private:
 
     std::vector<Tile> tiles;
     std::vector<TileSet> tile_sets;
+
+    std::vector<AnimatedTile> animated_tiles;
+    std::vector<AnimatedTileInfo> animated_tile_infos;
 
     std::vector<Rectangle> collidable_rectangles;
     std::vector<Slope> collidable_slopes;

@@ -19,11 +19,13 @@ Level::Level() {}
 Level::Level(
     std::string map_name,
     std::vector<Tile> tiles,
+    std::vector<AnimatedTile> animated_tiles,
     std::vector<TileSet> tile_sets,
     std::vector<Rectangle> collidable_rectangles,
     std::vector<Slope> collidable_slopes):
         map_name(map_name),
         tiles(tiles),
+        animated_tiles(animated_tiles),
         tile_sets(tile_sets),
         collidable_rectangles(collidable_rectangles),
         collidable_slopes(collidable_slopes) {
@@ -32,12 +34,18 @@ Level::Level(
 Level::~Level() { }
 
 void Level::update(int time_elapsed) {
-
+    for (int i = 0; i < animated_tiles.size(); i++) {
+        animated_tiles.at(i).update(time_elapsed);
+    }
 }
 
 void Level::draw(Graphics &graphics) {
     for (int i = 0; i < tiles.size(); i++) {
         tiles.at(i).draw(graphics);
+    }
+
+    for (int i = 0; i < animated_tiles.size(); i++) {
+        animated_tiles.at(i).draw(graphics);
     }
 
     if (Game::GAME_DEBUG) {

@@ -26,10 +26,13 @@ Level TsxLevelFactory::load_map(std::string map_name) {
     Vector2 map_size;
     Vector2 tile_size;
     SDL_Texture* background_texture;
+    std::vector<AnimatedTile> animated_tiles;
     std::vector<Tile> tiles;
     std::vector<TileSet> tile_sets;
     std::vector<Rectangle> collidable_rectangles;
     std::vector<Slope> collidable_slopes;
+
+    std::vector<AnimatedTileInfo> animated_tile_infos;
 
     XMLDocument document;
 
@@ -52,8 +55,8 @@ Level TsxLevelFactory::load_map(std::string map_name) {
 
     std::cout << "Map is " << map_size.x << " x " << map_size.y << "\n";
 
-    tile_sets = parse_tile_sets(map_node);
-    tiles = parse_tiles(map_node, tile_sets, map_size, tile_size);
+    tile_sets = parse_tile_sets(map_node, &animated_tile_infos);
+    parse_tiles(map_node, tile_sets, map_size, tile_size, animated_tile_infos, &tiles, &animated_tiles);
 
     XMLElement* object_group_node = map_node->FirstChildElement("objectgroup");
 
@@ -179,14 +182,14 @@ Level TsxLevelFactory::load_map(std::string map_name) {
 
     std::cout << "Done loading map \"" << map_name << "\"!\n";
 
-    Level level = Level(map_name, tiles, tile_sets, collidable_rectangles, collidable_slopes);
+    Level level = Level(map_name, tiles, animated_tiles, tile_sets, collidable_rectangles, collidable_slopes);
 
     level.set_player_spawn_point(spawn_point.x, spawn_point.y);
 
     return level;
 }
 
-std::vector<TileSet> TsxLevelFactory::parse_tile_sets(XMLElement* map_node) {
+std::vector<TileSet> TsxLevelFactory::parse_tile_sets(XMLElement* map_node, std::vector<AnimatedTileInfo>* animated_tile_infos) {
     std::vector<TileSet> tile_sets;
 
     // Load the tile sets.
@@ -217,6 +220,8 @@ std::vector<TileSet> TsxLevelFactory::parse_tile_sets(XMLElement* map_node) {
             }
             tile_sets.push_back(TileSet(tile_set_texture, first_gid));
 
+            parse_animated_tile_infos(tile_set_node, first_gid, animated_tile_infos);
+
             tile_set_node = tile_set_node->NextSiblingElement("tileset");
         }
     }
@@ -224,9 +229,63 @@ std::vector<TileSet> TsxLevelFactory::parse_tile_sets(XMLElement* map_node) {
     return tile_sets;
 }
 
-std::vector<Tile> TsxLevelFactory::parse_tiles(XMLElement* map_node, std::vector<TileSet> tile_sets, Vector2 map_size, Vector2 tile_size) {
-    std::vector<Tile> tiles;
+void TsxLevelFactory::parse_animated_tile_infos(XMLElement* tile_set_node, int tile_set_first_gid, std::vector<AnimatedTileInfo>* animated_tile_infos) {
+    XMLElement* animated_tile_node = tile_set_node->FirstChildElement("tile");
 
+    if (animated_tile_node != nullptr) {
+        while (animated_tile_node) {
+
+            auto tile_id_c = animated_tile_node->Attribute("id");
+
+            std::stringstream ss;
+            ss << tile_id_c;
+            std::cout << "Parsing tile node ID=" << ss.str() << "\n";
+            
+            AnimatedTileInfo animated_tile_info;
+
+            // TODO: Should the handling the offset for tile_set_first_gid be handled inside the tile info object?
+            animated_tile_info.start_tile_id = animated_tile_node->IntAttribute("id") + tile_set_first_gid;
+            animated_tile_info.tile_set_first_gid = tile_set_first_gid;
+
+            XMLElement* animation_node = animated_tile_node->FirstChildElement("animation");
+
+            if (animation_node != nullptr) {
+                while (animation_node) {
+                    std::cout << "Processing animation..." << "\n";
+
+                    XMLElement* frame_node = animation_node->FirstChildElement("frame");
+
+                    if (frame_node != nullptr) {
+                        while (frame_node) {
+                            auto frame_tile_id = frame_node->IntAttribute("tileid");
+                            std::cout << "Parsing frame with tileid=" << frame_tile_id << "\n";
+
+                            animated_tile_info.tile_ids.push_back(frame_tile_id + tile_set_first_gid);
+                            animated_tile_info.period = frame_node->IntAttribute("duration");
+
+                            frame_node = frame_node->NextSiblingElement("frame");
+                        }
+                    }
+
+                    animation_node = animation_node->NextSiblingElement("animation");
+                }
+            }
+
+            animated_tile_infos->push_back(animated_tile_info);
+
+            animated_tile_node = animated_tile_node->NextSiblingElement("tile");
+        }
+    }
+}
+
+void TsxLevelFactory::parse_tiles(
+    XMLElement* map_node,
+    std::vector<TileSet> tile_sets,
+    Vector2 map_size,
+    Vector2 tile_size,
+    std::vector<AnimatedTileInfo> animated_tile_infos,
+    std::vector<Tile>* tiles,
+    std::vector<AnimatedTile>* animated_tiles) {
     XMLElement* layer_element = map_node->FirstChildElement("layer");
 
     // TODO: Refactor this to a TmxParser class.
@@ -266,12 +325,15 @@ std::vector<Tile> TsxLevelFactory::parse_tiles(XMLElement* map_node, std::vector
 
                             int gid = tile_element->IntAttribute("gid");
                             TileSet tile_set;
+                            int closest = 0;
 
                             // TODO: Range operator?
                             for (int i = 0; i < tile_sets.size(); i++) {
                                 if (tile_sets[i].first_gid <= gid) {
-                                    tile_set = tile_sets[i];
-                                    break;
+                                    if (tile_sets.at(i).first_gid > closest) {
+                                        closest = tile_sets.at(i).first_gid;
+                                        tile_set = tile_sets[i];
+                                    }
                                 }
                             }
 
@@ -293,24 +355,47 @@ std::vector<Tile> TsxLevelFactory::parse_tiles(XMLElement* map_node, std::vector
                             int yy = (tile_counter / map_size.x) * tile_size.y;
                             Vector2 tile_position = Vector2(xx, yy);
 
-                            // Get the tile's position in the tile set.
-                            // TODO: Refactor.
-                            int tsxx = gid % (tile_set.width / tile_size.x) - 1;
-                            tsxx *= tile_size.x;
+                            Vector2 tile_set_position = get_tile_set_position(tile_set, gid, tile_size);
 
-                            int amount = (gid / (tile_set.width / tile_size.x));
+                            AnimatedTileInfo* animated_tile_info = nullptr;
 
-                            int tsyy = 0;
-                            tsyy = tile_size.y * amount;
+                            for (int i = 0; i < animated_tile_infos.size(); i++) {
+                                if (animated_tile_infos.at(i).start_tile_id == gid) {
+                                    animated_tile_info = &animated_tile_infos.at(i);
+                                    break;
+                                }
+                            }
 
-                            Vector2 tile_set_position = Vector2(tsxx, tsyy);
+                            if (animated_tile_info != nullptr) {
+                                std::vector<Vector2> tile_set_positions;
 
-                            std::cout << "Tile " << tile_counter << " at position (" << tile_position.x << "," << tile_position.y << ")\n";
+                                for (int i = 0; i < animated_tile_info->tile_ids.size(); i++) {
+                                    tile_set_positions.push_back(
+                                        get_tile_set_position(
+                                            tile_set,
+                                            animated_tile_info->tile_ids.at(i),
+                                            tile_size));
+                                }
 
-                            // Build Tile object and add it to level tile list.
-                            Tile tile(tile_set.texture, tile_size, tile_set_position, tile_position);
+                                AnimatedTile tile(
+                                    tile_set_positions,
+                                    animated_tile_info->period,
+                                    tile_set.texture,
+                                    tile_size,
+                                    tile_position);
 
-                            tiles.push_back(tile);
+                                std::cout << "AnimatedTile " << tile_counter << " at position (" << tile_position.x << "," << tile_position.y << ")\n";
+
+                                animated_tiles->push_back(tile);
+
+                            } else {
+                                std::cout << "Tile " << tile_counter << " at position (" << tile_position.x << "," << tile_position.y << ")\n";
+
+                                // Build Tile object and add it to level tile list.
+                                Tile tile(tile_set.texture, tile_size, tile_set_position, tile_position);
+
+                                tiles->push_back(tile);
+                            }
 
                             tile_counter++;
                             tile_element = tile_element->NextSiblingElement("tile");
@@ -324,6 +409,20 @@ std::vector<Tile> TsxLevelFactory::parse_tiles(XMLElement* map_node, std::vector
             layer_element = layer_element->NextSiblingElement("layer");
         }
     }
+}
 
-    return tiles;
+
+Vector2 TsxLevelFactory::get_tile_set_position(TileSet tile_set, int gid, Vector2 tile_size) {
+    // Get the tile's position in the tile set.
+    int tsxx = gid % (tile_set.width / tile_size.x) - 1;
+    tsxx *= tile_size.x;
+
+    int amount = ((gid - tile_set.first_gid) / (tile_set.width / tile_size.x));
+
+    int tsyy = 0;
+    tsyy = tile_size.y * amount;
+
+    Vector2 tile_set_position = Vector2(tsxx, tsyy);
+
+    return tile_set_position;
 }

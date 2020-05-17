@@ -12,18 +12,21 @@ public:
     void update(int time_elapsed);
 
     void draw(Graphics &graphics);
-private:
-    SDL_Texture* tile_set;
+
+protected:
+    /**
+     * Position of the tile on the map.
+     */
+    Vector2 map_position;
 
     Vector2 size;
 
+    SDL_Texture* tile_set;
+
+private:
     /**
      * Position of the tile on the tile set.
      */
     Vector2 tile_set_position;
 
-    /**
-     * Position of the tile on the map.
-     */
-    Vector2 map_position;
 };
